@@ -5,10 +5,18 @@ reconcile our event count against theirs. Ingestion does not stop while they
 walk it.
 """
 
-from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import PageNumberPagination, CursorPagination
 
 
-class UsagePagination(PageNumberPagination):
+# class UsagePagination(PageNumberPagination):
+#     page_size = 50
+#     page_size_query_param = "page_size"
+#     max_page_size = 500
+
+
+
+class UsagePagination(CursorPagination):
     page_size = 50
     page_size_query_param = "page_size"
     max_page_size = 500
+    ordering = '-recorded_at'
