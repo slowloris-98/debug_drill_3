@@ -1,0 +1,61 @@
+2026-03-24 16:38:02,114 INFO  meterly.api      org=helio key=...0b52d8aa16 method=POST path=/api/v1/usage/ status=201 ua=meterly-sync/2.1
+2026-03-24 16:39:41,880 INFO  meterly.admin    user=rokafor action=apikey.create label="production (rotated 2026-03-24)" key=...7f3a91c4e2
+2026-03-24 16:40:07,265 INFO  meterly.admin    user=rokafor action=apikey.revoke key=...0b52d8aa16
+2026-03-24 16:40:19,431 INFO  meterly.api      org=helio key=...0b52d8aa16 method=POST path=/api/v1/usage/ status=403 ua=meterly-sync/2.1
+2026-03-24 16:40:49,502 INFO  meterly.api      org=helio key=...0b52d8aa16 method=POST path=/api/v1/usage/ status=403 ua=meterly-sync/2.1
+2026-03-24 16:41:19,617 INFO  meterly.api      org=helio key=...0b52d8aa16 method=POST path=/api/v1/usage/ status=403 ua=meterly-sync/2.1
+2026-03-24 16:44:02,004 WARN  meterly.db       slow_query duration=1.84s sql="SELECT ... FROM core_usagerecord WHERE organization_id = ? ORDER BY recorded_at DESC LIMIT 50 OFFSET 4200"
+2026-03-24 16:51:19,733 INFO  meterly.api      org=helio key=...0b52d8aa16 method=POST path=/api/v1/usage/ status=403 ua=meterly-sync/2.1
+2026-03-24 17:02:11,908 INFO  meterly.api      org=sundial key=...9d20b6f1a5 method=GET path=/api/v1/usage/ status=200 ua=meterly-sync/2.1
+2026-03-24 17:18:55,120 INFO  meterly.api      org=helio key=...0b52d8aa16 method=POST path=/api/v1/usage/ status=403 ua=meterly-sync/2.1
+2026-03-24 18:30:02,441 INFO  meterly.api      org=helio key=...0b52d8aa16 method=POST path=/api/v1/usage/ status=403 ua=meterly-sync/2.1
+2026-03-24 19:12:33,077 INFO  meterly.web      user=rokafor method=GET path=/admin/login/ status=302 ua=Mozilla/5.0 (Macintosh)
+2026-03-24 19:12:48,219 INFO  meterly.api      org=helio key=...0b52d8aa16 method=GET path=/api/v1/usage/ status=200 ua=Mozilla/5.0 (Macintosh)
+2026-03-24 19:13:02,664 INFO  meterly.api      org=helio key=...0b52d8aa16 method=GET path=/api/v1/usage/ status=200 ua=Mozilla/5.0 (Macintosh)
+2026-03-24 19:14:20,015 INFO  meterly.support  ticket=8814 note="engineer confirms revoked key returns 200 in browser, cannot reproduce customer report"
+2026-03-24 20:00:02,338 INFO  meterly.api      org=helio key=...0b52d8aa16 method=POST path=/api/v1/usage/ status=403 ua=meterly-sync/2.1
+2026-03-24 22:30:02,551 INFO  meterly.api      org=helio key=...0b52d8aa16 method=POST path=/api/v1/usage/ status=403 ua=meterly-sync/2.1
+2026-03-24 22:31:04,900 WARN  meterly.webhook  org=helio event=usage.overage endpoint=hooks.helio-robotics.example status=502 attempt=1
+2026-03-24 22:31:34,918 WARN  meterly.webhook  org=helio event=usage.overage endpoint=hooks.helio-robotics.example status=502 attempt=2
+2026-03-24 22:32:04,930 INFO  meterly.webhook  org=helio event=usage.overage endpoint=hooks.helio-robotics.example status=200 attempt=3
+2026-03-25 00:00:02,101 INFO  meterly.api      org=helio key=...0b52d8aa16 method=POST path=/api/v1/usage/ status=403 ua=meterly-sync/2.1
+2026-03-25 02:14:55,663 INFO  meterly.support  ticket=8814 note="customer reconfigured integration with new key ...7f3a91c4e2"
+2026-03-25 02:15:03,772 INFO  meterly.api      org=helio key=...7f3a91c4e2 method=POST path=/api/v1/usage/ status=201 ua=meterly-sync/2.1
+2026-03-25 02:15:04,010 INFO  meterly.api      org=helio key=...7f3a91c4e2 method=POST path=/api/v1/usage/ status=201 ua=meterly-sync/2.1
+2026-03-25 02:15:04,288 INFO  meterly.api      org=helio key=...7f3a91c4e2 method=POST path=/api/v1/usage/ status=201 ua=meterly-sync/2.1
+2026-03-26 09:41:12,004 INFO  meterly.api      org=pallas key=...2a8f45c703 method=GET path=/api/v1/summary/ status=200 cache=MISS
+2026-03-26 09:41:12,051 INFO  meterly.api      org=pallas key=...2a8f45c703 method=GET path=/api/v1/summary/ status=200 cache=HIT
+2026-03-26 11:20:44,918 WARN  meterly.db       slow_query duration=2.10s sql="SELECT ... FROM core_usagerecord WHERE organization_id = ? ORDER BY recorded_at DESC LIMIT 50 OFFSET 4650"
+2026-03-27 14:02:19,551 INFO  meterly.api      org=quillon key=...31d7ae6b08 method=GET path=/api/v1/invoices/9902/ status=404
+2026-03-29 03:00:01,004 INFO  meterly.recon    org=helio job=nightly page=1 returned=50 running_total=50
+2026-03-29 03:00:01,712 INFO  meterly.recon    org=helio job=nightly page=2 returned=50 running_total=100
+2026-03-29 03:00:09,338 INFO  meterly.recon    org=helio job=nightly page=48 returned=50 running_total=2400
+2026-03-29 03:00:19,225 INFO  meterly.recon    org=helio job=nightly page=97 returned=12 running_total=4812
+2026-03-29 03:00:19,410 INFO  meterly.recon    org=helio job=nightly complete unique_ids=4812 duplicates=0
+2026-03-30 03:00:01,118 INFO  meterly.recon    org=helio job=nightly page=1 returned=50 running_total=50
+2026-03-30 03:00:04,882 INFO  meterly.recon    org=helio job=nightly page=19 returned=50 running_total=950
+2026-03-30 03:00:12,006 INFO  meterly.recon    org=helio job=nightly page=63 returned=50 running_total=3150
+2026-03-30 03:00:21,559 INFO  meterly.recon    org=helio job=nightly page=98 returned=27 running_total=4877
+2026-03-30 03:00:21,740 WARN  meterly.recon    org=helio job=nightly complete unique_ids=4846 duplicates=31
+2026-03-31 03:00:01,090 INFO  meterly.recon    org=helio job=nightly page=1 returned=50 running_total=50
+2026-03-31 03:00:22,004 INFO  meterly.recon    org=helio job=nightly page=99 returned=41 running_total=4941
+2026-03-31 03:00:22,188 WARN  meterly.recon    org=helio job=nightly complete unique_ids=4903 duplicates=38
+2026-04-01 09:15:00,002 INFO  meterly.billing  period=2026-03-01 action=invoice.issue count=11 gross_cents=5890100 credit_cents=233750
+2026-04-01 09:15:00,441 INFO  meterly.billing  period=2026-03-01 action=invoice.issue complete net_cents=5656350
+2026-04-01 09:22:14,663 INFO  meterly.web      user=mbell method=GET path=/ status=200 ua=Mozilla/5.0 (Windows NT 10.0)
+2026-04-01 09:22:41,229 INFO  meterly.support  ticket=8871 note="finance reports dashboard total does not match billing run"
+2026-04-01 14:03:55,010 INFO  meterly.api      org=vantage key=...4c1e77b930 method=GET path=/api/v1/summary/ status=200 cache=MISS
+2026-04-01 14:03:57,441 INFO  meterly.api      org=vantage key=...4c1e77b930 method=GET path=/api/v1/summary/ status=200 cache=HIT
+2026-04-01 14:04:11,882 INFO  meterly.api      org=sundial key=...9d20b6f1a5 method=GET path=/api/v1/summary/ status=200 cache=HIT
+2026-04-01 14:04:29,337 INFO  meterly.api      org=corvid key=...6e93b1d284 method=GET path=/api/v1/summary/ status=200 cache=HIT
+2026-04-01 14:04:44,109 INFO  meterly.api      org=northbeam key=...be4072a95c method=GET path=/api/v1/summary/ status=200 cache=HIT
+2026-04-01 14:05:03,995 INFO  meterly.api      org=sundial key=...9d20b6f1a5 method=GET path=/api/v1/summary/ status=200 cache=MISS
+2026-04-01 14:05:06,220 INFO  meterly.api      org=corvid key=...6e93b1d284 method=GET path=/api/v1/summary/ status=200 cache=HIT
+2026-04-01 14:05:31,774 INFO  meterly.support  ticket=8880 note="Corvid Labs reports seeing another company name in the usage summary panel"
+2026-04-01 14:06:02,118 INFO  meterly.api      org=corvid key=...6e93b1d284 method=GET path=/api/v1/summary/ status=200 cache=MISS
+2026-04-01 14:06:04,553 INFO  meterly.api      org=corvid key=...6e93b1d284 method=GET path=/api/v1/summary/ status=200 cache=HIT
+2026-04-01 22:14:08,771 WARN  meterly.db       slow_query duration=1.55s sql="SELECT ... FROM core_usagerecord WHERE organization_id = ? ORDER BY recorded_at DESC LIMIT 50 OFFSET 3900"
+2026-04-02 03:00:01,004 INFO  meterly.recon    org=helio job=nightly page=1 returned=50 running_total=50
+2026-04-02 03:00:23,660 WARN  meterly.recon    org=helio job=nightly complete unique_ids=4790 duplicates=31
+2026-04-02 07:41:19,220 INFO  meterly.support  ticket=8884 note="Helio reconciliation mismatch escalated by Tomas Lindqvist"
+2026-04-02 08:02:44,918 INFO  meterly.web      user=mbell method=GET path=/ status=200 ua=Mozilla/5.0 (Windows NT 10.0)
