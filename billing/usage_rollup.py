@@ -27,7 +27,7 @@ ROLLUP_SQL = """
            SUM(u.quantity * u.unit_cost_cents) AS amount_cents
       FROM core_usagerecord u
       JOIN core_organization o ON o.id = u.organization_id
-     WHERE u.recorded_at BETWEEN %s AND %s
+     WHERE DATE(u.recorded_at) BETWEEN %s AND %s
      GROUP BY o.name, u.metric
      ORDER BY o.name, u.metric
 """
