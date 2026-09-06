@@ -9,7 +9,7 @@ Rules these functions are supposed to implement:
     summary's rows must add up to the reported revenue total.
 """
 
-from django.db.models import F, Sum
+from django.db.models import F, Sum, functions
 
 from core.models import Invoice
 
@@ -18,7 +18,7 @@ def invoice_summary(period_start):
     """One row per issued invoice for the period, largest first."""
     return list(
         Invoice.objects.filter(period_start=period_start)
-        .annotate(net_cents=F("gross_cents") - F("credit_cents"))
+        .annotate(net_cents=F("gross_cents") - functions.Coalesce(F("credit_cents"), 0))
         .order_by("-gross_cents")
         .values("organization__name", "gross_cents", "credit_cents", "net_cents")
     )
@@ -28,7 +28,7 @@ def revenue_total(period_start):
     """Total net revenue owed to us for the period, in cents."""
     return (
         Invoice.objects.filter(period_start=period_start)
-        .annotate(net_cents=F("gross_cents") - F("credit_cents"))
+        .annotate(net_cents=F("gross_cents") - functions.Coalesce(F("credit_cents"), 0))
         .aggregate(total=Sum("net_cents"))["total"]
         or 0
     )
