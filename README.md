@@ -6,13 +6,15 @@ invoice, apply credits, and bill the net. Customers read their own data back
 through the API; our finance team reads the whole book through a dashboard.
 
 It is the morning of **2 April 2026**. The March books closed yesterday.
-**Four escalations are open. All four are real.** Your job is to reproduce each
+**Five escalations are open. All five are real.** Your job is to reproduce each
 one, find the cause, fix it, and be able to explain it out loud to the person
 who reported it.
 
-Budget **60 minutes** — roughly 12 minutes a ticket, leaving time to write up
-your findings. If you are stuck past 15 minutes on one, move on and come back.
-That decision is part of the drill.
+Budget **75 minutes** — roughly 13 minutes a ticket, leaving time to write up
+your findings. If you are stuck past 15 minutes on one, move on and come back;
+that decision is part of the drill. To run this as a strict 60-minute round
+instead, read all five tickets first and then deliberately drop one — choosing
+which, and being able to justify it on severity, is worth practising on its own.
 
 ---
 
@@ -24,19 +26,22 @@ python -m venv .venv
 
 .venv/Scripts/python manage.py migrate
 .venv/Scripts/python manage.py seed_demo
-.venv/Scripts/python -m pytest -q                 # expect: 8 failed, 10 passed
+.venv/Scripts/python -m pytest -q                 # expect: 11 failed, 11 passed
 .venv/Scripts/python manage.py runserver          # http://127.0.0.1:8000/
 ```
 
-If you get anything other than **8 failed / 10 passed**, the environment is off.
+If you get anything other than **11 failed / 11 passed**, the environment is off.
 Fix that before you start the clock.
+
+Two pages are worth having open: `/` is finance's revenue report and `/usage/`
+is the metered usage behind it.
 
 Sign-ins are `mbell / meterly` (finance, superuser) and `rokafor / meterly`
 (Helio Robotics' account owner). Live API keys are in
 `core/management/commands/seed_demo.py`.
 
-> **The test suite is not a map of the bugs.** One of these four tickets has no
-> failing test at all. Three of them do. Which is which is for you to work out —
+> **The test suite is not a map of the bugs.** One of these five tickets has no
+> failing test at all. Four of them do. Which is which is for you to work out —
 > a green suite is not the finish line.
 
 `logs/app.log` is a slice of production logging over the period the tickets
@@ -54,6 +59,12 @@ This section is the **oracle**. When something looks wrong, the question is not
 invoice with no credit nets its full gross — "no credit" and "a zero credit"
 mean the same thing to a customer. Every issued invoice for the period appears
 in the summary, and the rows must add up to the reported total.
+
+**Billing periods.** A period runs from its first day to its last day
+**inclusive**. March 2026 means every event from 2026-03-01 00:00:00 through
+2026-03-31 23:59:59 — and nothing from April, however close to midnight it
+landed. Consecutive periods neither overlap nor leave a gap: every stored event
+belongs to exactly one of them.
 
 **Tenancy.** Every API response is scoped to the organization that owns the
 credential on the request. No response may ever contain another organization's
@@ -153,6 +164,30 @@ Suggest re-running the billing job for those accounts.
 
 ---
 
+### TICKET-8892 — Sundial Media — "You've under-counted our build minutes"
+**Severity: high.** Customer disputes an issued invoice.
+
+> Jo Halloran, Engineering Manager, Sundial Media:
+>
+> "We're checking our March bill against our own CI records before we pay it.
+> Your usage report says we ran **28,314 build minutes** in March. Our CI logs
+> say **29,824**. That's 1,510 minutes you haven't billed us for — I'm telling
+> you because I'd rather sort it now than get a surprise correction later.
+>
+> I pulled our own numbers apart by day and the gap is *exactly* what we ran on
+> the 31st. Your report looks like it stops at the 30th. Every metric on the
+> report is light, not just build minutes, and it's the same story each month —
+> we just never checked before.
+>
+> One thing that might be relevant: we started pushing April usage on the 1st,
+> so there is data on both sides of the boundary now."
+
+**Internal note (support):** Ingestion looks healthy — the API returned 201 for
+Sundial all through the 31st, so we did receive the events. Possibly a timezone
+problem? Sundial are UK-based and we store everything in UTC.
+
+---
+
 ## What "done" looks like
 
 1. **`pytest -q` is green** for the tickets that have tests. Do not edit a test
@@ -176,12 +211,17 @@ wrong data"). Aim for that.
 
 ## Things worth noticing
 
-- At least one internal note above points at the wrong layer.
+- More than one internal note above points at the wrong layer.
 - At least one ticket confidently asserts something that is not true, and
   proposes a fix that would not have helped.
-- Two of these tickets produce the same one-line symptom as each other. So do
-  the other two. Being able to say why the members of each pair are nothing
-  alike is exactly what gets probed.
+- **Three** of these tickets reduce to "the number is wrong" and two reduce to
+  "authentication did something strange." Being able to say, in one sentence
+  each, why they are nothing alike is exactly what gets probed. The three
+  number bugs in particular are in three different layers and only one of them
+  is about money.
+- Two tickets touch the same billing period and the same customer data from
+  different directions. They are not the same bug, and fixing one does not
+  move the other.
 - After you fix something and a test goes green, ask what *else* could produce
   the same symptom before you move on.
 

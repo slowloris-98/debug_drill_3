@@ -17,6 +17,16 @@ off on these figures and they are what the reports are supposed to produce):
     Helio Robotics ingested exactly 4,812 usage events in March. 240 of those
     arrived as a single backfill batch and therefore share one identical
     recorded_at (2026-03-18T02:00:00Z).
+
+    Usage is spread across the whole of March, 1st to 31st inclusive, including
+    events late on the 31st: 8,182 events in March, 248 of them on the 31st.
+    The very last of those lands at 23:59:59.500000.
+    Two accounts have also started ingesting into April, all of it on 1 April:
+    Sundial Media (40 events) and Corvid Labs (15). April usage belongs to
+    April and must never appear in a March figure.
+
+    Sundial Media's true March usage is 155 events on each of the four metrics
+    — 620 in total — including 29,824 build minutes.
 """
 
 import datetime as dt
@@ -69,6 +79,8 @@ METRIC_COSTS = [("api_calls", 2), ("build_minutes", 35), ("seats", 4500), ("stor
 
 MARCH_START = dt.date(2026, 3, 1)
 MARCH_END = dt.date(2026, 3, 31)
+# Accounts that have already started ingesting into the new period.
+APRIL_SPILLOVER = {"sundial": 40, "corvid": 15}
 ISSUED_AT = dt.datetime(2026, 4, 1, 9, 15, tzinfo=UTC)
 BACKFILL_AT = dt.datetime(2026, 3, 18, 2, 0, 0, tzinfo=UTC)
 
@@ -118,6 +130,20 @@ class Command(BaseCommand):
             )
 
             self._seed_usage(org, usage_count, rng)
+
+        # The final event of the month lands mid-second. Any period fix that
+        # hard-codes 23:59:59 as an inclusive upper bound silently loses it.
+        last_of_march = (
+            UsageRecord.objects.filter(
+                organization=orgs["sundial"], metric="build_minutes"
+            )
+            .order_by("id")
+            .first()
+        )
+        last_of_march.recorded_at = dt.datetime(
+            2026, 3, 31, 23, 59, 59, 500000, tzinfo=UTC
+        )
+        last_of_march.save(update_fields=["recorded_at"])
 
         for slug, key, label, revoked_at in API_KEYS:
             ApiKey.objects.create(
@@ -179,4 +205,20 @@ class Command(BaseCommand):
                     external_id=f"evt_{org.slug}_{i:05d}",
                 )
             )
+        # April usage for the accounts that have already rolled over. These must
+        # never be counted in a March figure.
+        for i in range(APRIL_SPILLOVER.get(org.slug, 0)):
+            metric, unit_cost = METRIC_COSTS[i % len(METRIC_COSTS)]
+            records.append(
+                UsageRecord(
+                    organization=org,
+                    metric=metric,
+                    quantity=rng.randrange(1, 400),
+                    unit_cost_cents=unit_cost,
+                    recorded_at=dt.datetime(2026, 4, 1, tzinfo=UTC)
+                    + dt.timedelta(seconds=rng.randrange(0, 24 * 3600)),
+                    external_id=f"evt_{org.slug}_apr_{i:05d}",
+                )
+            )
+
         UsageRecord.objects.bulk_create(records, batch_size=1000)

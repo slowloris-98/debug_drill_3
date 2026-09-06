@@ -40,10 +40,17 @@
 2026-03-31 03:00:01,090 INFO  meterly.recon    org=helio job=nightly page=1 returned=50 running_total=50
 2026-03-31 03:00:22,004 INFO  meterly.recon    org=helio job=nightly page=99 returned=41 running_total=4941
 2026-03-31 03:00:22,188 WARN  meterly.recon    org=helio job=nightly complete unique_ids=4903 duplicates=38
+2026-03-31 08:41:12,554 INFO  meterly.api      org=sundial key=...9d20b6f1a5 method=POST path=/api/v1/usage/ status=201 ua=meterly-sync/2.1
+2026-03-31 14:22:05,118 INFO  meterly.api      org=sundial key=...9d20b6f1a5 method=POST path=/api/v1/usage/ status=201 ua=meterly-sync/2.1
+2026-03-31 19:07:44,902 INFO  meterly.api      org=sundial key=...9d20b6f1a5 method=POST path=/api/v1/usage/ status=201 ua=meterly-sync/2.1
+2026-03-31 23:51:38,220 INFO  meterly.api      org=sundial key=...9d20b6f1a5 method=POST path=/api/v1/usage/ status=201 ua=meterly-sync/2.1
+2026-04-01 00:00:03,114 INFO  meterly.ingest   period=2026-03-01 day=2026-03-31 accepted=248 rejected=0 last_event_at=2026-03-31T23:59:59.500000Z
 2026-04-01 09:15:00,002 INFO  meterly.billing  period=2026-03-01 action=invoice.issue count=11 gross_cents=5890100 credit_cents=233750
 2026-04-01 09:15:00,441 INFO  meterly.billing  period=2026-03-01 action=invoice.issue complete net_cents=5656350
 2026-04-01 09:22:14,663 INFO  meterly.web      user=mbell method=GET path=/ status=200 ua=Mozilla/5.0 (Windows NT 10.0)
 2026-04-01 09:22:41,229 INFO  meterly.support  ticket=8871 note="finance reports dashboard total does not match billing run"
+2026-04-01 10:12:33,806 INFO  meterly.billing  period=2026-03-01 action=usage.rollup orgs=11 metrics=44 events=7934
+2026-04-01 10:12:34,015 WARN  meterly.billing  period=2026-03-01 action=usage.rollup rollup_events=7934 ingested_events=8182 delta=-248
 2026-04-01 14:03:55,010 INFO  meterly.api      org=vantage key=...4c1e77b930 method=GET path=/api/v1/summary/ status=200 cache=MISS
 2026-04-01 14:03:57,441 INFO  meterly.api      org=vantage key=...4c1e77b930 method=GET path=/api/v1/summary/ status=200 cache=HIT
 2026-04-01 14:04:11,882 INFO  meterly.api      org=sundial key=...9d20b6f1a5 method=GET path=/api/v1/summary/ status=200 cache=HIT
@@ -58,4 +65,5 @@
 2026-04-02 03:00:01,004 INFO  meterly.recon    org=helio job=nightly page=1 returned=50 running_total=50
 2026-04-02 03:00:23,660 WARN  meterly.recon    org=helio job=nightly complete unique_ids=4790 duplicates=31
 2026-04-02 07:41:19,220 INFO  meterly.support  ticket=8884 note="Helio reconciliation mismatch escalated by Tomas Lindqvist"
+2026-04-02 07:58:03,441 INFO  meterly.support  ticket=8892 note="Sundial Media disputes March build minutes, claims 29824 vs our 28314"
 2026-04-02 08:02:44,918 INFO  meterly.web      user=mbell method=GET path=/ status=200 ua=Mozilla/5.0 (Windows NT 10.0)

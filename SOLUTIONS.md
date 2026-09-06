@@ -3,11 +3,12 @@
 **Stop here if the hour isn't up.** Reading this early costs you the exercise.
 
 Every fix below was applied to a clean copy of this repo. The suite went from
-**8 failed / 10 passed** to **18 passed**. No test was modified to get there.
+**11 failed / 11 passed** to **22 passed**. No test was modified to get there.
 
-Four bugs, one per area the interview brief names: an HTTP/caching bug, an
-auth-semantics bug, a SQL/ORM bug, and a pagination bug. Three have failing
-tests. **Bug 1 has none** — that is deliberate, and the reason matters.
+Five bugs, spread across the areas the interview brief names: an HTTP/caching
+bug, an auth-semantics bug, an ORM/NULL bug, a pagination bug, and a raw-SQL
+range bug. Four have failing tests. **Bug 1 has none** — that is deliberate,
+and the reason matters.
 
 ---
 
@@ -554,7 +555,143 @@ FIX:        Cursor pagination ordered by (-recorded_at, -id), plus a
 
 ---
 
-## The two symptom collisions
+## Bug 5 — TICKET-8892 — `BETWEEN` two dates on a timestamp column
+
+**Where:** `billing/usage_rollup.py`, `ROLLUP_SQL`:
+
+```sql
+WHERE u.recorded_at BETWEEN %s AND %s
+```
+
+called as `usage_rollup(date(2026, 3, 1), date(2026, 3, 31))`.
+
+**Reproduce:**
+
+```bash
+python -c "import django,os; os.environ.setdefault('DJANGO_SETTINGS_MODULE','config.settings'); django.setup(); \
+import datetime as dt; from billing.usage_rollup import period_totals; print(period_totals(dt.date(2026,3,1), dt.date(2026,3,31)))"
+# {'events': 7934, ...}      <- 8,182 events were ingested in March
+```
+
+Or open `/usage/` and read the footer: 7,934.
+
+### Root cause — the upper bound is a date, and the column is a timestamp
+
+`BETWEEN a AND b` is `>= a AND <= b`. The parameter `2026-03-31` is a *date*;
+compared against a timestamp column it means the **first instant** of that day,
+`2026-03-31 00:00:00`. So the filter is:
+
+```
+recorded_at >= 2026-03-01 00:00:00  AND  recorded_at <= 2026-03-31 00:00:00
+```
+
+Everything on the 31st after midnight — 23 hours, 59 minutes and 59 seconds of
+it — falls outside. **248 events across all eleven customers, every month.**
+
+| | Rolled up | Actual |
+|---|---|---|
+| March events, all customers | 7,934 | **8,182** |
+| Sundial Media, each metric | 147 / 148 / 152 / 153 | **155 each** |
+| Sundial build minutes | 28,314 | **29,824** |
+
+Jo's arithmetic is exactly right, including the part she was least sure about:
+every metric is light, not just build minutes, because the missing day is
+missing for all of them.
+
+`logs/app.log` states it outright if you look —
+`2026-04-01 10:12:34 WARN meterly.billing rollup_events=7934 ingested_events=8182 delta=-248`,
+sitting directly under an ingest line confirming 248 events accepted on the 31st.
+
+### Fix — a half-open interval, not an inclusive one
+
+```python
+     WHERE u.recorded_at >= %s AND u.recorded_at < %s
+```
+
+```python
+        # The period is inclusive of its last day, so the exclusive upper
+        # bound is the first instant of the next day.
+        cursor.execute(ROLLUP_SQL, [period_start, period_end + dt.timedelta(days=1)])
+```
+
+**Do not fix this by writing `BETWEEN %s AND %s` with `'2026-03-31 23:59:59'`.**
+It is the fix people reach for and it is wrong in two ways: it silently drops
+anything in the last second (sub-second precision is real — `recorded_at` is
+stored to the microsecond), and it breaks the moment the column type changes or
+the database rounds differently. `>= start AND < next_start` is correct at every
+precision and needs no arithmetic on the boundary value.
+
+The general rule worth stating: **date ranges over timestamps are half-open.**
+Inclusive upper bounds on a continuous quantity are always a bug waiting for a
+finer clock.
+
+### The suite rejects the shortcut
+
+Worth knowing before you reach for `23:59:59`: it does not go green. Sundial's
+final March event is stamped `2026-03-31 23:59:59.500000` (the seed says so),
+so an inclusive `23:59:59` bound still loses it — and all three rollup tests
+still fail, not just one:
+
+| Predicate | March | April | Total (8,237 stored) |
+|---|---|---|---|
+| `BETWEEN date AND date` (shipped) | 7,934 | 0 | 7,934 |
+| `BETWEEN … AND '…23:59:59'` | 8,181 | 55 | **8,236** |
+| `>= start AND < next start` | 8,182 | 55 | **8,237** ✅ |
+
+`test_march_and_april_together_account_for_every_event` is the one that pins it
+down: March's count plus April's count must equal every stored event, so no
+event may fall between two consecutive periods. That single invariant is worth
+more than either of the two absolute-number tests, because it keeps holding
+when the seed data changes.
+
+### What was a red herring
+
+The support note guesses timezones — "Sundial are UK-based and we store
+everything in UTC." Plausible, and wrong. A timezone error shifts a boundary by
+a fixed offset and would move *some* of the 31st out and *some* of the 1st in;
+this loses the entire 31st and gains nothing. **A timezone bug displaces a
+window. This one truncates it.** That distinction is worth being able to make
+quickly, because the two get confused constantly.
+
+The other tempting wrong turn is ingestion: Jo says the numbers are short, so
+did we drop the events? No — `POST` returned 201 all through the 31st and the
+rows are in the table. This is entirely a read-path bug, and confirming that
+first is what stops you debugging the wrong service.
+
+### Escalation note
+
+```
+REPRO:      period_totals(2026-03-01, 2026-03-31) returns 7,934 events;
+            8,182 events are stored with a March recorded_at. The 248-event
+            difference is every event on the 31st after 00:00:00.
+IMPACT:     Every customer, every billing period, since this query shipped.
+            Usage under-reported by one day per month — Sundial by 1,510 build
+            minutes in March. Customers are under-billed and the usage report
+            contradicts the usage feed.
+HYPOTHESIS: BETWEEN is inclusive on both ends and the upper bound is a date, so
+            it resolves to 2026-03-31 00:00:00 against a timestamp column. The
+            last day is excluded except for anything landing exactly at midnight.
+FIX:        Half-open range: recorded_at >= period_start AND recorded_at <
+            period_end + 1 day. Not '23:59:59', which loses sub-second events.
+```
+
+### Saying it out loud
+
+> "You're right, and thank you for checking — the missing minutes are exactly
+> the 31st. We asked our database for usage 'between the 1st and the 31st', but
+> because your events are stamped with a time and not just a date, 'the 31st'
+> was read as the very start of that day. So everything you ran after midnight
+> on your last day fell outside the report. It affects every metric and every
+> customer, not just you, and it's a reporting error — the events themselves
+> were all received and stored correctly. We'll correct your March figure and
+> tell you what it should have been."
+
+Volunteering the blast radius — *every customer, every month* — before Jo has to
+ask is the difference between answering a ticket and handling an incident.
+
+---
+
+## The symptom collisions
 
 These were built in deliberately. Interviewers probe exactly here.
 
@@ -564,36 +701,52 @@ worked, the cache didn't. Bug 2 is a caller who was never authenticated at all
 and got the wrong *word* for it. One is a tenancy failure, the other is a status
 code failure. Neither is "the API key system is broken."
 
-**"The number is wrong"** — bugs 3 and 4. Bug 3 is deterministic, identical on
-every run, and lives in one SQL expression: the same $33,762.00 every time. Bug
-4 is non-deterministic, different every run, and lives in the interaction
-between a query and concurrent writes. **If a wrong number is the same wrong
-number twice, it is a logic bug. If it moves, something is changing underneath
-you.** That one sentence is the whole discrimination, and it is a good thing to
-have ready.
+**"The number is wrong"** — bugs 3, 4 and 5, in three different layers.
+
+- **Bug 3** is wrong by a *set of rows*: four invoices contribute nothing. Same
+  $33,762.00 every run. The defect is in an expression — NULL arithmetic.
+- **Bug 5** is wrong by a *slice of time*: one day is missing from every period.
+  Same 7,934 every run. The defect is in a predicate — an inclusive upper bound
+  on a timestamp.
+- **Bug 4** is wrong by a *different amount every run*. The defect is not in the
+  query at all; it is in the interaction between a correct query and concurrent
+  writes.
+
+The first discrimination is stability: **if a wrong number is the same wrong
+number twice, it is a logic bug; if it moves, something is changing underneath
+you.** That splits bug 4 off immediately. The second is *what shape* is missing —
+whole rows or a time slice — which splits 3 from 5. Have both sentences ready.
+
+It is also worth noticing what 3 and 5 have in common and refusing to merge
+them: both are month-end, both under-report, both are read-path only, and they
+are in different files with unrelated causes. Fixing either one moves the other
+not at all.
 
 ---
 
 ## Scorecard
 
-| | Bug 1 (cache) | Bug 2 (auth) | Bug 3 (NULL) | Bug 4 (paging) |
-|---|---|---|---|---|
-| Found it from the symptom, not by grepping | | | | |
-| Quoted the rule from README before editing | | | | |
-| Reproduced it before fixing | | | | |
-| Checked for a second cause after the first fix | | | | |
-| Rejected the wrong theory in the ticket | | | | |
-| Explained it to the customer without jargon | | | | |
-| Named the guardrail, not "more tests" | | | | |
+| | Bug 1 (cache) | Bug 2 (auth) | Bug 3 (NULL) | Bug 4 (paging) | Bug 5 (range) |
+|---|---|---|---|---|---|
+| Found it from the symptom, not by grepping | | | | | |
+| Quoted the rule from README before editing | | | | | |
+| Reproduced it before fixing | | | | | |
+| Checked for a second cause after the first fix | | | | | |
+| Rejected the wrong theory in the ticket | | | | | |
+| Explained it to the customer without jargon | | | | | |
+| Named the guardrail, not "more tests" | | | | | |
 
 - **Bug 1** is the one with no failing test. If you only worked the suite, you
-  never opened it — and it is the highest-severity ticket of the four.
+  never opened it — and it is the highest-severity ticket of the five.
 - **Bug 2** is the one where the obvious fix goes green and still ships the
   customer's outage back to them.
 - **Bug 3** is the one where the reporter's own diagnosis is wrong and his
   proposed remedy would have touched live billing.
 - **Bug 4** is the one where the correct fix is a breaking API change, and
   saying so unprompted is most of the signal.
+- **Bug 5** is the one where the fix everyone reaches for (`23:59:59`) is also
+  wrong, and where the customer has already done the diagnosis for you — the
+  test is whether you take the gift and then check the blast radius anyway.
 
 ## Retro
 
@@ -608,5 +761,5 @@ have ready.
 ## A harder second pass
 
 Re-arm with `git checkout -- api billing core config`, then delete the `tests/`
-directory and work the four tickets from the complaints and `logs/app.log`
+directory and work the five tickets from the complaints and `logs/app.log`
 alone. That is the version of this that matches the actual job.

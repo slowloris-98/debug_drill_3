@@ -3,8 +3,10 @@ import datetime as dt
 from django.shortcuts import render
 
 from billing.reports import invoice_summary, revenue_total
+from billing.usage_rollup import period_totals, usage_rollup
 
 MARCH_2026 = dt.date(2026, 3, 1)
+MARCH_2026_END = dt.date(2026, 3, 31)
 
 
 def money(cents):
@@ -34,5 +36,31 @@ def invoice_report(request):
             "rows": rows,
             "total": money(revenue_total(period_start)),
             "row_count": len(rows),
+        },
+    )
+
+
+def usage_report(request):
+    """Metered usage behind the bill, for the same period."""
+    rows = [
+        {
+            "organization": row["organization"],
+            "metric": row["metric"],
+            "events": row["events"],
+            "quantity": row["quantity"],
+            "amount": money(row["amount_cents"]),
+        }
+        for row in usage_rollup(MARCH_2026, MARCH_2026_END)
+    ]
+    totals = period_totals(MARCH_2026, MARCH_2026_END)
+    return render(
+        request,
+        "dashboard/usage.html",
+        {
+            "period_start": MARCH_2026,
+            "period_end": MARCH_2026_END,
+            "rows": rows,
+            "total_events": totals["events"],
+            "total_amount": money(totals["amount_cents"]),
         },
     )

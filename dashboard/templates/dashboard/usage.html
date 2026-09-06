@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Meterly — Usage rollup</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 40px auto; max-width: 780px; color: #1b1f24; }
+    h1 { font-size: 20px; margin-bottom: 2px; }
+    .sub { color: #6a737d; margin-top: 0; }
+    a { color: #2a6fb8; }
+    table { border-collapse: collapse; width: 100%; margin-top: 24px; }
+    th, td { padding: 6px 10px; border-bottom: 1px solid #e6e8ea; text-align: right; }
+    th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+    thead th { border-bottom: 2px solid #d0d4d8; font-size: 12px; text-transform: uppercase;
+               letter-spacing: .04em; color: #6a737d; }
+    tfoot td { font-weight: 600; border-top: 2px solid #d0d4d8; border-bottom: none; }
+    .money, .num { font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+  <h1>Usage rollup</h1>
+  <p class="sub">
+    {{ period_start }} to {{ period_end }} inclusive &middot;
+    <a href="/">revenue report</a>
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>Customer</th><th>Metric</th><th>Events</th><th>Quantity</th><th>Amount</th></tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ row.organization }}</td>
+        <td>{{ row.metric }}</td>
+        <td class="num">{{ row.events }}</td>
+        <td class="num">{{ row.quantity }}</td>
+        <td class="money">{{ row.amount }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="2">Total</td>
+        <td class="num">{{ total_events }}</td>
+        <td></td>
+        <td class="money">{{ total_amount }}</td>
+      </tr>
+    </tfoot>
+  </table>
+</body>
+</html>
