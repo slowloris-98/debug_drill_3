@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Meterly — Revenue report</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 40px auto; max-width: 780px; color: #1b1f24; }
+    h1 { font-size: 20px; margin-bottom: 2px; }
+    .sub { color: #6a737d; margin-top: 0; }
+    table { border-collapse: collapse; width: 100%; margin-top: 24px; }
+    th, td { padding: 7px 10px; border-bottom: 1px solid #e6e8ea; text-align: right; }
+    th:first-child, td:first-child { text-align: left; }
+    thead th { border-bottom: 2px solid #d0d4d8; font-size: 12px; text-transform: uppercase;
+               letter-spacing: .04em; color: #6a737d; }
+    tfoot td { font-weight: 600; border-top: 2px solid #d0d4d8; border-bottom: none; }
+    .money { font-variant-numeric: tabular-nums; }
+    .empty { color: #c9ced3; }
+  </style>
+</head>
+<body>
+  <h1>Revenue report</h1>
+  <p class="sub">Billing period starting {{ period_start }} &middot; {{ row_count }} invoices</p>
+
+  <table>
+    <thead>
+      <tr><th>Customer</th><th>Gross</th><th>Credits</th><th>Net</th></tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ row.organization__name }}</td>
+        <td class="money">${{ row.gross_cents|floatformat:0|slice:":-2" }}.{{ row.gross_cents|stringformat:"05d"|slice:"-2:" }}</td>
+        <td class="money">{% if row.credit_cents %}${{ row.credit_cents|stringformat:"d"|slice:":-2" }}.{{ row.credit_cents|stringformat:"05d"|slice:"-2:" }}{% else %}<span class="empty">&mdash;</span>{% endif %}</td>
+        <td class="money">{% if row.net_cents %}${{ row.net_cents|stringformat:"d"|slice:":-2" }}.{{ row.net_cents|stringformat:"05d"|slice:"-2:" }}{% else %}<span class="empty">&mdash;</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3">Total net revenue</td>
+        <td class="money">${{ total_cents|stringformat:"d"|slice:":-2" }}.{{ total_cents|stringformat:"05d"|slice:"-2:" }}</td>
+      </tr>
+    </tfoot>
+  </table>
+</body>
+</html>
